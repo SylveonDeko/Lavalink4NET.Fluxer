@@ -83,7 +83,9 @@ public sealed class FluxerClientWrapper : IDiscordClientWrapper, IDisposable
             return;
         }
 
-        await _voice.JoinAsync(guildId, channelId, selfDeaf, selfMute, cancellationToken).ConfigureAwait(false);
+        FluxerVoiceConnection connection = await _voice.JoinAsync(guildId, channelId, selfDeaf, selfMute, cancellationToken).ConfigureAwait(false);
+        connection.Disconnected -= OnVoiceDisconnected;
+        connection.Disconnected += OnVoiceDisconnected;
 
         await VoiceServerUpdated
             .InvokeAsync(this, new VoiceServerUpdatedEventArgs(guildId, BridgedVoiceServer))
@@ -101,6 +103,20 @@ public sealed class FluxerClientWrapper : IDiscordClientWrapper, IDisposable
         _client.Gateway.VoiceStateUpdated -= OnVoiceStateUpdated;
     }
 
+    private void OnVoiceDisconnected(FluxerVoiceConnection connection, Exception? exception)
+    {
+        // A connection the voice client still holds only lost its media server, for example during a move.
+        if (_client.Gateway.CurrentUser is not { } currentUser || ReferenceEquals(_voice.GetConnection(connection.GuildId), connection))
+            return;
+
+        // The leave Fluxer sent for this connection was held back until the voice client knew it was not a move.
+        if (_voiceStates.TryRemove((connection.GuildId, currentUser.Id), out VoiceState previous))
+        {
+            _ = RaiseVoiceStateUpdatedAsync(new VoiceStateUpdatedEventArgs(connection.GuildId, currentUser.Id, true,
+                new VoiceState(null, previous.SessionId), previous));
+        }
+    }
+
     private void OnReady(SocketCurrentUser currentUser) =>
         _ready.TrySetResult(new ClientInformation(Label, currentUser.Id, 1));
 
@@ -113,12 +129,18 @@ public sealed class FluxerClientWrapper : IDiscordClientWrapper, IDisposable
         VoiceState current = new VoiceState(voiceState.ChannelId, voiceState.SessionId);
         VoiceState previous = _voiceStates.GetValueOrDefault(key);
 
+        bool isCurrentUser = voiceState.UserId == _client.Gateway.CurrentUser?.Id;
         if (voiceState.ChannelId is null)
+        {
+            // Fluxer sends a leave before moving the bot, so while the voice connection is still open the leave is
+            // passed on from OnVoiceDisconnected instead, once it is known not to be a move.
+            if (isCurrentUser && (_voice.GetConnection(guildId) != null || !_voiceStates.ContainsKey(key)))
+                return;
             _voiceStates.TryRemove(key, out _);
+        }
         else
             _voiceStates[key] = current;
 
-        bool isCurrentUser = voiceState.UserId == _client.Gateway.CurrentUser?.Id;
         _ = RaiseVoiceStateUpdatedAsync(new VoiceStateUpdatedEventArgs(guildId, voiceState.UserId, isCurrentUser, current, previous));
     }
 
