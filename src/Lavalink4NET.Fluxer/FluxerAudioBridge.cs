@@ -70,7 +70,16 @@ public sealed class FluxerAudioBridge : BackgroundService
                 await socket.ConnectAsync(uri, cancellationToken).ConfigureAwait(false);
                 _logger.LogInformation("Audio stream connected to {Node}", node.BaseAddress);
 
-                await ReceiveAsync(socket, cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await ReceiveAsync(socket, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    await CloseAsync(socket).ConfigureAwait(false);
+                    return;
+                }
+
                 _logger.LogWarning("Audio stream from {Node} closed: {Status} {Reason}", node.BaseAddress,
                     socket.CloseStatus, socket.CloseStatusDescription);
             }
@@ -204,6 +213,21 @@ public sealed class FluxerAudioBridge : BackgroundService
         {
             _pumps.TryRemove(new KeyValuePair<ulong, Channel<short[]>>(guildId, pump));
             pump.Writer.TryComplete();
+        }
+    }
+
+    private static async Task CloseAsync(ClientWebSocket socket)
+    {
+        if (socket.State is not (WebSocketState.Open or WebSocketState.CloseReceived))
+            return;
+
+        using CancellationTokenSource timeout = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        try
+        {
+            await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Shutting down", timeout.Token).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is WebSocketException or OperationCanceledException)
+        {
         }
     }
 
