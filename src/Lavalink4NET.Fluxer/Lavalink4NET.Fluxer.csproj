@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <PackageId>Lavalink4NET.Fluxer</PackageId>
+    <Version>0.1.0</Version>
+    <Description>Lavalink4NET integration for Fluxer.Net bots, playing Lavalink audio into Fluxer voice channels.</Description>
+    <PackageTags>lavalink;lavalink4net;fluxer;music;voice</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Lavalink4NET" Version="4.2.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Fluxer.Net\Fluxer.Net.Voice\Fluxer.Net.Voice.csproj" />
+  </ItemGroup>
+
+</Project>
