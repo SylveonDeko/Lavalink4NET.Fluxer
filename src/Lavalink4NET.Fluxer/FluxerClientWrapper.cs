@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Fluxer.Net;
-using Fluxer.Net.Voice;
 using Lavalink4NET.Clients;
 using Lavalink4NET.Clients.Events;
 using Lavalink4NET.Events;
@@ -12,7 +11,7 @@ using VoiceState = Lavalink4NET.Clients.VoiceState;
 namespace Lavalink4NET.Fluxer;
 
 /// <summary>
-/// Connects Lavalink4NET to a <see cref="FluxerClient"/>, joining voice through <see cref="FluxerVoiceClient"/>.
+/// Connects Lavalink4NET to a <see cref="FluxerClient"/>, joining voice through the client's <see cref="IVoiceProvider"/>.
 /// </summary>
 public sealed class FluxerClientWrapper : IDiscordClientWrapper, IDisposable
 {
@@ -20,7 +19,7 @@ public sealed class FluxerClientWrapper : IDiscordClientWrapper, IDisposable
     private static readonly VoiceServer BridgedVoiceServer = new VoiceServer("fluxer", "fluxer");
 
     private readonly FluxerClient _client;
-    private readonly FluxerVoiceClient _voice;
+    private readonly IVoiceProvider _voice;
     private readonly ILogger<FluxerClientWrapper> _logger;
     private readonly ConcurrentDictionary<(ulong GuildId, ulong UserId), VoiceState> _voiceStates = new ConcurrentDictionary<(ulong GuildId, ulong UserId), VoiceState>();
     private readonly TaskCompletionSource<ClientInformation> _ready = new TaskCompletionSource<ClientInformation>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -28,7 +27,7 @@ public sealed class FluxerClientWrapper : IDiscordClientWrapper, IDisposable
     /// <summary>
     /// Creates the wrapper for a Fluxer client and its voice client.
     /// </summary>
-    public FluxerClientWrapper(FluxerClient client, FluxerVoiceClient voice, ILogger<FluxerClientWrapper> logger)
+    public FluxerClientWrapper(FluxerClient client, IVoiceProvider voice, ILogger<FluxerClientWrapper> logger)
     {
         _client = client;
         _voice = voice;
@@ -73,11 +72,11 @@ public sealed class FluxerClientWrapper : IDiscordClientWrapper, IDisposable
     {
         if (voiceChannelId is not { } channelId)
         {
-            await _voice.LeaveAsync(guildId).ConfigureAwait(false);
+            await _voice.DisconnectAsync(guildId).ConfigureAwait(false);
             return;
         }
 
-        FluxerVoiceConnection connection = await _voice.JoinAsync(guildId, channelId, selfDeaf, selfMute, cancellationToken).ConfigureAwait(false);
+        IAudioClient connection = await _voice.ConnectAsync(guildId, channelId, selfDeaf, selfMute, cancellationToken).ConfigureAwait(false);
         connection.Disconnected -= OnVoiceDisconnected;
         connection.Disconnected += OnVoiceDisconnected;
 
@@ -97,9 +96,9 @@ public sealed class FluxerClientWrapper : IDiscordClientWrapper, IDisposable
         _client.Gateway.VoiceStateUpdated -= OnVoiceStateUpdated;
     }
 
-    private void OnVoiceDisconnected(FluxerVoiceConnection connection, Exception? exception)
+    private void OnVoiceDisconnected(IAudioClient connection, Exception? exception)
     {
-        if (_client.Gateway.CurrentUser is not { } currentUser || ReferenceEquals(_voice.GetConnection(connection.GuildId), connection))
+        if (_client.Gateway.CurrentUser is not { } currentUser || ReferenceEquals(_voice.GetAudioClient(connection.GuildId), connection))
             return;
 
         if (_voiceStates.TryRemove((connection.GuildId, currentUser.Id), out VoiceState previous))
@@ -124,7 +123,7 @@ public sealed class FluxerClientWrapper : IDiscordClientWrapper, IDisposable
         bool isCurrentUser = voiceState.UserId == _client.Gateway.CurrentUser?.Id;
         if (voiceState.ChannelId is null)
         {
-            if (isCurrentUser && (_voice.GetConnection(guildId) != null || !_voiceStates.ContainsKey(key)))
+            if (isCurrentUser && (_voice.GetAudioClient(guildId) != null || !_voiceStates.ContainsKey(key)))
                 return;
             _voiceStates.TryRemove(key, out _);
         }

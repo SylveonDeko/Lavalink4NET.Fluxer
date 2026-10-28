@@ -40,6 +40,7 @@ public static class ServiceCollectionExtensions
         {
             QueueDuration = provider.GetRequiredService<IOptions<FluxerAudioOptions>>().Value.QueueDuration
         });
+        services.TryAddSingleton<IVoiceProvider>(provider => provider.GetRequiredService<FluxerVoiceClient>());
         services.AddHostedService<FluxerAudioBridge>();
         return services;
     }

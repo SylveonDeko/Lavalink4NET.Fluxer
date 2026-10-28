@@ -2,8 +2,9 @@ using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Threading.Channels;
-using Fluxer.Net.Voice;
 using Lavalink4NET.Clients;
+using IAudioClient = Fluxer.Net.IAudioClient;
+using IVoiceProvider = Fluxer.Net.IVoiceProvider;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -24,7 +25,7 @@ public sealed class FluxerAudioBridge : BackgroundService
     private const int PumpCapacity = 25;
     private static readonly TimeSpan PumpIdleTimeout = TimeSpan.FromSeconds(30);
 
-    private readonly FluxerVoiceClient _voice;
+    private readonly IVoiceProvider _voice;
     private readonly IDiscordClientWrapper _client;
     private readonly FluxerAudioOptions _options;
     private readonly AudioServiceOptions _audioOptions;
@@ -34,7 +35,7 @@ public sealed class FluxerAudioBridge : BackgroundService
     /// <summary>
     /// Creates the bridge.
     /// </summary>
-    public FluxerAudioBridge(FluxerVoiceClient voice, IDiscordClientWrapper client, IOptions<FluxerAudioOptions> options,
+    public FluxerAudioBridge(IVoiceProvider voice, IDiscordClientWrapper client, IOptions<FluxerAudioOptions> options,
         IOptions<AudioServiceOptions> audioOptions, ILogger<FluxerAudioBridge> logger)
     {
         _voice = voice;
@@ -128,7 +129,7 @@ public sealed class FluxerAudioBridge : BackgroundService
 
             ulong guildId = BinaryPrimitives.ReadUInt64BigEndian(buffer);
             int sampleCount = (count - HeaderLength) / sizeof(short);
-            sampleCount -= sampleCount % FluxerVoiceConnection.Channels;
+            sampleCount -= sampleCount % IAudioClient.Channels;
 
             short[] samples = new short[sampleCount];
             Buffer.BlockCopy(buffer, HeaderLength, samples, 0, sampleCount * sizeof(short));
@@ -139,7 +140,7 @@ public sealed class FluxerAudioBridge : BackgroundService
 
     private void Enqueue(ulong guildId, short[] samples, CancellationToken cancellationToken)
     {
-        if (_voice.GetConnection(guildId) is not { IsConnected: true })
+        if (_voice.GetAudioClient(guildId) is not { IsConnected: true })
             return;
 
         while (true)
@@ -189,7 +190,7 @@ public sealed class FluxerAudioBridge : BackgroundService
 
                 while (pump.Reader.TryRead(out short[]? samples))
                 {
-                    if (_voice.GetConnection(guildId) is not { IsConnected: true } connection)
+                    if (_voice.GetAudioClient(guildId) is not { IsConnected: true } connection)
                         continue;
 
                     try
