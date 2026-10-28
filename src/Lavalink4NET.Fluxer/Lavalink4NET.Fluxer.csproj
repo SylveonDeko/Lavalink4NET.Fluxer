@@ -9,17 +9,22 @@
 
     <PackageId>Lavalink4NET.Fluxer</PackageId>
     <Version>0.1.0</Version>
+    <Authors>SylveonDeko</Authors>
     <Description>Lavalink4NET integration for Fluxer.Net bots, playing Lavalink audio into Fluxer voice channels.</Description>
     <PackageTags>lavalink;lavalink4net;fluxer;music;voice</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/SylveonDeko/Lavalink4NET.Fluxer</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Fluxer.Net.Voice" Version="3.9.0" />
     <PackageReference Include="Lavalink4NET" Version="4.2.2" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Fluxer.Net\Fluxer.Net.Voice\Fluxer.Net.Voice.csproj" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

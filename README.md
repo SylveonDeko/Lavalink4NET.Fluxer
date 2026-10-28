@@ -7,6 +7,12 @@ It needs a Lavalink node running [lavalink-fluxer-plugin](https://github.com/Syl
 bot joins voice through `Fluxer.Net.Voice`, and `FluxerAudioBridge` streams each player's audio from the node into
 that connection.
 
+## Installation
+
+```
+dotnet add package Lavalink4NET.Fluxer
+```
+
 ## Usage
 
 Single node:
@@ -30,14 +36,3 @@ services.AddFluxerAudio(options =>
 ```
 
 Players are then used the same way as with any other Lavalink4NET client.
-
-## Building
-
-The project references `Fluxer.Net.Voice` from a [Fluxer.Net](https://github.com/Nexfinity/Fluxer.Net) checkout next
-to this one:
-
-```
-git clone https://github.com/Nexfinity/Fluxer.Net
-git clone https://github.com/SylveonDeko/Lavalink4NET.Fluxer
-dotnet build Lavalink4NET.Fluxer
-```
