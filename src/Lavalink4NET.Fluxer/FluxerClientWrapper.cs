@@ -12,14 +12,8 @@ using VoiceState = Lavalink4NET.Clients.VoiceState;
 namespace Lavalink4NET.Fluxer;
 
 /// <summary>
-/// Connects Lavalink4NET to a <see cref="FluxerClient"/>.
+/// Connects Lavalink4NET to a <see cref="FluxerClient"/>, joining voice through <see cref="FluxerVoiceClient"/>.
 /// </summary>
-/// <remarks>
-/// Fluxer voice runs on LiveKit, which Lavalink cannot join itself. Joining a channel opens a
-/// <see cref="FluxerVoiceConnection"/> through <see cref="FluxerVoiceClient"/>, and only then tells Lavalink4NET
-/// the voice server is ready so the player is created. The audio itself reaches the channel through
-/// <see cref="FluxerAudioBridge"/>.
-/// </remarks>
 public sealed class FluxerClientWrapper : IDiscordClientWrapper, IDisposable
 {
     private const string Label = "Fluxer";
@@ -105,11 +99,9 @@ public sealed class FluxerClientWrapper : IDiscordClientWrapper, IDisposable
 
     private void OnVoiceDisconnected(FluxerVoiceConnection connection, Exception? exception)
     {
-        // A connection the voice client still holds only lost its media server, for example during a move.
         if (_client.Gateway.CurrentUser is not { } currentUser || ReferenceEquals(_voice.GetConnection(connection.GuildId), connection))
             return;
 
-        // The leave Fluxer sent for this connection was held back until the voice client knew it was not a move.
         if (_voiceStates.TryRemove((connection.GuildId, currentUser.Id), out VoiceState previous))
         {
             _ = RaiseVoiceStateUpdatedAsync(new VoiceStateUpdatedEventArgs(connection.GuildId, currentUser.Id, true,
@@ -132,8 +124,6 @@ public sealed class FluxerClientWrapper : IDiscordClientWrapper, IDisposable
         bool isCurrentUser = voiceState.UserId == _client.Gateway.CurrentUser?.Id;
         if (voiceState.ChannelId is null)
         {
-            // Fluxer sends a leave before moving the bot, so while the voice connection is still open the leave is
-            // passed on from OnVoiceDisconnected instead, once it is known not to be a move.
             if (isCurrentUser && (_voice.GetConnection(guildId) != null || !_voiceStates.ContainsKey(key)))
                 return;
             _voiceStates.TryRemove(key, out _);
