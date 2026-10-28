@@ -1,10 +1,15 @@
 # Lavalink4NET.Fluxer
 
-Lavalink4NET integration for [Fluxer.Net](https://github.com/Nexfinity/Fluxer.Net) bots. It needs a Lavalink node
-running [lavalink-fluxer-plugin](https://github.com/SylveonDeko/lavalink-fluxer-plugin).
+[Lavalink4NET](https://github.com/angelobreuer/Lavalink4NET) support for [Fluxer.Net](https://github.com/Nexfinity/Fluxer.Net)
+bots.
 
-Fluxer voice runs on LiveKit. The bot joins voice itself through `Fluxer.Net.Voice`, and `FluxerAudioBridge`
-streams each player's audio from the node into that voice connection.
+It needs a Lavalink node running [lavalink-fluxer-plugin](https://github.com/SylveonDeko/lavalink-fluxer-plugin). The
+bot joins voice through `Fluxer.Net.Voice`, and `FluxerAudioBridge` streams each player's audio from the node into
+that connection.
+
+## Usage
+
+Single node:
 
 ```csharp
 services.AddSingleton(fluxerClient);
@@ -16,9 +21,23 @@ services.ConfigureLavalink(options =>
 });
 ```
 
-With a cluster, register the wrapper yourself and list the nodes for the bridge:
+Cluster:
 
 ```csharp
 services.AddLavalinkCluster<FluxerClientWrapper>();
-services.AddFluxerAudio(options => options.Nodes.Add(new FluxerAudioNode(new Uri("http://localhost:2333"), "youshallnotpass")));
+services.AddFluxerAudio(options =>
+    options.Nodes.Add(new FluxerAudioNode(new Uri("http://localhost:2333"), "youshallnotpass")));
+```
+
+Players are then used the same way as with any other Lavalink4NET client.
+
+## Building
+
+The project references `Fluxer.Net.Voice` from a [Fluxer.Net](https://github.com/Nexfinity/Fluxer.Net) checkout next
+to this one:
+
+```
+git clone https://github.com/Nexfinity/Fluxer.Net
+git clone https://github.com/SylveonDeko/Lavalink4NET.Fluxer
+dotnet build Lavalink4NET.Fluxer
 ```
