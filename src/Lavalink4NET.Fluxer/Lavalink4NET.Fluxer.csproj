@@ -8,11 +8,11 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
     <PackageId>Lavalink4NET.Fluxer</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Authors>SylveonDeko</Authors>
     <Description>Lavalink4NET integration for Fluxer.Net bots, playing Lavalink audio into Fluxer voice channels.</Description>
     <PackageTags>lavalink;lavalink4net;fluxer;music;voice</PackageTags>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/SylveonDeko/Lavalink4NET.Fluxer</RepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
