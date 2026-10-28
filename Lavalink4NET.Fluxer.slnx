@@ -2,6 +2,4 @@
   <Folder Name="/src/">
     <Project Path="src/Lavalink4NET.Fluxer/Lavalink4NET.Fluxer.csproj" />
   </Folder>
-  <Project Path="../Fluxer.Net/Fluxer.Net.Voice/Fluxer.Net.Voice.csproj" />
-  <Project Path="../Fluxer.Net/Fluxer.Net/Fluxer.Net.csproj" />
 </Solution>
